@@ -11,6 +11,8 @@ const productsDOM = document.querySelector(".products-center");
 
 //cart
 let cart = [];
+//buttons
+let buttonsDOM = [];
 // getting the products
 class Products {
   async getProducts() {
@@ -31,13 +33,92 @@ class Products {
   }
 }
 // display products
-class UI {}
+class UI {
+  displayProducts(products) {
+    let result = '';
+    products.forEach(product => {
+      result += `
+      <!-- single product -->
+        <article class="product">
+            <div class="img-container">
+                <img src=${product.image} alt="product" class="product-img">
+                <button class="bag-btn" data-id=${product.id}>
+                    <i class="fas fa-shopping-cart" id="iconCart">
+                        add to cart
+                    </i>
+                </button>
+            </div>
+            <h3>${product.title}</h3>
+            <h4>Ksh ${product.price * 100}</h4>
+        </article>
+      <!-- end of single product -->
+      `
+    });
+    productsDOM.innerHTML = result  
+  }
+  getBagButtons() {
+    const buttons = [...document.querySelectorAll(".bag-btn")];
+    buttonsDOM = buttons;
+    buttons.forEach(button => {
+      let id = button.dataset.id;
+      let inCart = cart.find(item => item.id === id);
+      if (inCart) {
+        button.innerText = "In Cart";
+        button.disabled = true;
+      } else {
+        button.addEventListener("click", event => {
+          event.target.innerText = "In Cart";
+          event.target.disabled = true;
+          // get product from products
+          let cartItem = { ...Storage.getProduct(id), amount: 1 };
+          // add product to the cart
+          cart = [...cart, cartItem];
+          // save cart in local storage
+          Storage.saveCart(cart);
+          // set cart values
+          this.setCartValues(cart);
+          // display cart item
+          this.addCartItem(cartItem);
+        });
+      }
+    });
+  }
+  setCartValues(cart) {
+    let tempTotal = 0;
+    let itemsTotal = 0;
+    cart.map(item => {
+      tempTotal += item.price * item.amount;
+      itemsTotal += item.amount;
+    });
+    cartTotal.innerText = parseFloat(tempTotal.toFixed(2));
+    cartItems.innerText = itemsTotal;
+  }
+  addCartItem(item) {
+
+  }
+}
 // local storage
-class Storage {}
+class Storage {
+  static saveProducts(products) {
+    localStorage.setItem("products", JSON.stringify(products));
+  }
+  static getProduct(id) {
+    let products = JSON.parse(localStorage.getItem('products'));
+    return products.find(product => product.id === id)
+  }
+  static saveCart(cart){
+    localStorage.setItem('cart', JSON.stringify(cart))
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const ui = new UI();
   const products = new Products();
   // get all products
-  products.getProducts().then(data => console.log(data));
+  products.getProducts().then(products => {
+    ui.displayProducts(products);
+    Storage.saveProducts(products);
+  }).then(() => {
+    ui.getBagButtons();
+  });
 });
